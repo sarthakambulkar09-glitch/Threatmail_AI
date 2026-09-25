@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document for authenticated SOC analysts",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "ThreatReport": {
+      "title": "ThreatReport",
+      "description": "Email threat report saved in analyst collection",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "senderEmail": { "type": "string" },
+        "riskScore": { "type": "number" },
+        "classification": { "type": "string" },
+        "status": { "type": "string" },
+        "scannedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "subject", "senderEmail", "riskScore", "classification", "status", "scannedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Multi-turn Gemini SOC chat history message",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "role": { "type": "string" },
+        "model": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "role", "model", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile collection"
+    },
+    "/users/{userId}/threatReports/{reportId}": {
+      "schema": "ThreatReport",
+      "description": "User threat scan reports"
+    },
+    "/users/{userId}/chatMessages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "User chat conversation messages with Gemini"
+    }
+  }
+}

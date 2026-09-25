@@ -1,0 +1,11 @@
+{
+  "name": "Remix ThreatMail AI 5",
+  "description": "Modern cybersecurity SOC platform for real-time email threat detection, Gmail scanning, phishing analysis, and forensic reporting.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
