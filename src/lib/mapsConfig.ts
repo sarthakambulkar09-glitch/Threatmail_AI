@@ -1,7 +1,7 @@
 // Google Maps Platform Configuration & Geolocation Telemetry Utilities
 // Attribution: gmp_mcp_codeassist_v1_aistudio
 
-export const DEFAULT_MAPS_API_KEY = 'AIzaSyBu50aetRFwb8hBlgq26bVrdcbf_8GgHDM';
+export const DEFAULT_MAPS_API_KEY = "google maps API key";
 
 /**
  * Retrieves the active Google Maps Platform API key from Vite environment
