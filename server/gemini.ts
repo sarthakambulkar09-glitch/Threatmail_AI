@@ -250,16 +250,17 @@ export async function analyzeEmailWithGemini(input: EmailScanInput): Promise<AiS
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY') {
     const ai = getAi();
     const prompt = buildThreatAnalysisPrompt(input, ensembleResult);
+    // Use valid Gemini model aliases per AI Studio guidelines
     const candidateModels = [
-      'gemini-3.5-flash',
-      'gemini-3.1-flash-lite',
       'gemini-3.8-flash',
+      'gemini-3.1-flash-lite',
       'gemini-flash-latest',
     ];
 
     for (const modelName of candidateModels) {
       try {
-        const response = await ai.models.generateContent({
+        // Enforce a strict 2.5-second timeout so email scanning never stalls or delays
+        const generatePromise = ai.models.generateContent({
           model: modelName,
           contents: prompt,
           config: {
@@ -305,6 +306,12 @@ export async function analyzeEmailWithGemini(input: EmailScanInput): Promise<AiS
           },
         });
 
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT_FAST_SCAN')), 2500)
+        );
+
+        const response: any = await Promise.race([generatePromise, timeoutPromise]);
+
         if (response.text) {
           const parsed = JSON.parse(response.text);
           const validated = parseAndValidateResult(parsed);
@@ -328,6 +335,10 @@ export async function analyzeEmailWithGemini(input: EmailScanInput): Promise<AiS
         }
       } catch (err: any) {
         const errMsg = String(err?.message || '');
+        if (errMsg.includes('TIMEOUT_FAST_SCAN')) {
+          console.log(`[ThreatMail SOC] ${modelName} took >2.5s; rapidly accelerating via Kaggle ensemble.`);
+          break; // Don't delay scanning, immediately use ensemble
+        }
         const isQuota =
           err?.status === 429 ||
           errMsg.includes('429') ||
@@ -339,7 +350,7 @@ export async function analyzeEmailWithGemini(input: EmailScanInput): Promise<AiS
           console.log(`[ThreatMail SOC] ${modelName} reached rate limit, trying secondary model...`);
           continue;
         } else {
-          console.log(`[ThreatMail SOC] ${modelName} evaluation notice, checking fallback models.`);
+          console.log(`[ThreatMail SOC] ${modelName} evaluation fallback to Kaggle ensemble.`);
           continue;
         }
       }

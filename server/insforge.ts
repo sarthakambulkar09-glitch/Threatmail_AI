@@ -458,7 +458,41 @@ export function generateSampleScansForUser(userEmail: string, count: number = 1)
   return results;
 }
 
-// IP Geolocation resolver with fallback lookup table for common cloud & mail relays
+// In-memory cache for IP Geolocation to eliminate redundant network queries and make scanning ultra-fast
+const ipGeoCache = new Map<
+  string,
+  {
+    city: string;
+    country: string;
+    countryCode: string;
+    lat: number;
+    lng: number;
+    isp?: string;
+    org?: string;
+  }
+>();
+
+// Pre-seed cache with common mail providers / relays
+ipGeoCache.set('209.85.220.41', {
+  city: 'Mountain View',
+  country: 'United States',
+  countryCode: 'US',
+  lat: 37.422,
+  lng: -122.0841,
+  isp: 'Google LLC MX Relay',
+  org: 'Google Workspace',
+});
+ipGeoCache.set('142.251.12.26', {
+  city: 'Council Bluffs',
+  country: 'United States',
+  countryCode: 'US',
+  lat: 41.2619,
+  lng: -95.8608,
+  isp: 'Google LLC Mail Transit',
+  org: 'Google Cloud Platform',
+});
+
+// IP Geolocation resolver with in-memory caching & fast deterministic fallback for high-speed scanning
 export async function resolveIpGeolocation(ip: string): Promise<{
   city: string;
   country: string;
@@ -468,15 +502,7 @@ export async function resolveIpGeolocation(ip: string): Promise<{
   isp?: string;
   org?: string;
 }> {
-  // Check for private / localhost / loopback IPs
-  if (
-    !ip ||
-    ip === '127.0.0.1' ||
-    ip === '::1' ||
-    ip.startsWith('10.') ||
-    ip.startsWith('192.168.') ||
-    ip.startsWith('172.16.')
-  ) {
+  if (!ip) {
     return {
       city: 'Local Mail Gateway',
       country: 'Private Network',
@@ -487,10 +513,36 @@ export async function resolveIpGeolocation(ip: string): Promise<{
     };
   }
 
-  // Try external IP geolocation API with fast timeout
+  // Check cache first (0 ms response)
+  const cached = ipGeoCache.get(ip);
+  if (cached) {
+    return cached;
+  }
+
+  // Check for private / localhost / loopback IPs
+  if (
+    ip === '127.0.0.1' ||
+    ip === '::1' ||
+    ip.startsWith('10.') ||
+    ip.startsWith('192.168.') ||
+    ip.startsWith('172.16.')
+  ) {
+    const localResult = {
+      city: 'Local Mail Gateway',
+      country: 'Private Network',
+      countryCode: 'LAN',
+      lat: 37.7749,
+      lng: -122.4194,
+      isp: 'Internal Enterprise Relay',
+    };
+    ipGeoCache.set(ip, localResult);
+    return localResult;
+  }
+
+  // Try external IP geolocation API with 400ms fast abort timeout
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const timeoutId = setTimeout(() => controller.abort(), 400);
     const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode,city,lat,lon,isp,org`, {
       signal: controller.signal,
     });
@@ -499,7 +551,7 @@ export async function resolveIpGeolocation(ip: string): Promise<{
     if (res.ok) {
       const data = await res.json();
       if (data && data.status === 'success' && data.lat && data.lon) {
-        return {
+        const resolved = {
           city: data.city || 'Unknown City',
           country: data.country || 'Unknown Country',
           countryCode: data.countryCode || 'XX',
@@ -508,13 +560,15 @@ export async function resolveIpGeolocation(ip: string): Promise<{
           isp: data.isp || data.org || 'Mail Service Provider',
           org: data.org,
         };
+        ipGeoCache.set(ip, resolved);
+        return resolved;
       }
     }
   } catch {
-    // Fallback if network lookup times out or fails in container
+    // Fallback if network lookup times out or fails
   }
 
-  // Deterministic geographic hashing for realistic routing visualization when external geo-service is rate-limited
+  // Deterministic geographic hashing for realistic routing visualization (instantaneous fallback)
   const hash = ip.split('.').reduce((acc, part) => (acc * 31 + parseInt(part || '0', 10)) % 10000, 0);
   const locations = [
     { city: 'San Jose', country: 'United States', countryCode: 'US', lat: 37.3382, lng: -121.8863, isp: 'Cloudflare / Google Cloud' },
@@ -530,56 +584,27 @@ export async function resolveIpGeolocation(ip: string): Promise<{
   ];
 
   const chosen = locations[hash % locations.length];
-  return {
+  const deterministicResult = {
     ...chosen,
     isp: chosen.isp,
   };
+  ipGeoCache.set(ip, deterministicResult);
+  return deterministicResult;
 }
 
-// Parse email travel route from Received headers
+// Parse email travel route from Received headers with parallel IP resolution (Ultra-Fast)
 export async function parseTravelRoute(rawReceivedHeaders: string[]): Promise<RouteHop[]> {
-  const hops: RouteHop[] = [];
-
   // Received headers are in reverse chronological order (top is final destination, bottom is first origin)
   // We reverse them to show true travel order: Hop 1 (Origin) -> Hop N (Destination)
-  const orderedHeaders = [...rawReceivedHeaders].reverse();
+  // Take at most 4 hops to avoid unbounded parsing delay
+  const orderedHeaders = [...rawReceivedHeaders].reverse().slice(0, 4);
 
-  for (let i = 0; i < orderedHeaders.length; i++) {
-    const header = orderedHeaders[i];
-    
-    // Extract IP from header
-    const ipMatch = header.match(/\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]/) ||
-                    header.match(/from\s+([^\s]+)\s+\((?:[^\)]*\[)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
-    const ip = ipMatch ? ipMatch[1] || ipMatch[2] : `198.51.100.${10 + i * 5}`;
-
-    // Extract 'from' and 'by' servers
-    const fromMatch = header.match(/from\s+([^\s\(\)]+)/i);
-    const byMatch = header.match(/by\s+([^\s\(\)]+)/i);
-
-    const fromServer = fromMatch ? fromMatch[1] : (i === 0 ? 'origin.mailserver.net' : `relay-${i}.network.net`);
-    const byServer = byMatch ? byMatch[1] : (i === orderedHeaders.length - 1 ? 'mx.google.com' : `hop-${i + 1}.gateway.com`);
-
-    const location = await resolveIpGeolocation(ip);
-
-    hops.push({
-      hopNumber: i + 1,
-      fromServer,
-      byServer,
-      ip,
-      location: {
-        city: location.city,
-        country: location.country,
-        lat: location.lat,
-        lng: location.lng,
-      },
-    });
-  }
-
-  // If no hops were extractable, provide default standard mail route
-  if (hops.length === 0) {
-    const loc1 = await resolveIpGeolocation('209.85.220.41');
-    const loc2 = await resolveIpGeolocation('142.251.12.26');
-    hops.push(
+  if (orderedHeaders.length === 0) {
+    const [loc1, loc2] = await Promise.all([
+      resolveIpGeolocation('209.85.220.41'),
+      resolveIpGeolocation('142.251.12.26'),
+    ]);
+    return [
       {
         hopNumber: 1,
         fromServer: 'mail-origin.external.net',
@@ -593,9 +618,46 @@ export async function parseTravelRoute(rawReceivedHeaders: string[]): Promise<Ro
         byServer: 'mx.google.com',
         ip: '142.251.12.26',
         location: { city: loc2.city, country: loc2.country, lat: loc2.lat, lng: loc2.lng },
-      }
-    );
+      },
+    ];
   }
 
-  return hops;
+  // Resolve all hops in parallel using Promise.all for high speed
+  const hopPromises = orderedHeaders.map(async (header, i) => {
+    const ipMatch =
+      header.match(/\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]/) ||
+      header.match(/from\s+([^\s]+)\s+\((?:[^\)]*\[)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+    const ip = ipMatch ? ipMatch[1] || ipMatch[2] : `198.51.100.${10 + i * 5}`;
+
+    const fromMatch = header.match(/from\s+([^\s\(\)]+)/i);
+    const byMatch = header.match(/by\s+([^\s\(\)]+)/i);
+
+    const fromServer = fromMatch
+      ? fromMatch[1]
+      : i === 0
+      ? 'origin.mailserver.net'
+      : `relay-${i}.network.net`;
+    const byServer = byMatch
+      ? byMatch[1]
+      : i === orderedHeaders.length - 1
+      ? 'mx.google.com'
+      : `hop-${i + 1}.gateway.com`;
+
+    const location = await resolveIpGeolocation(ip);
+
+    return {
+      hopNumber: i + 1,
+      fromServer,
+      byServer,
+      ip,
+      location: {
+        city: location.city,
+        country: location.country,
+        lat: location.lat,
+        lng: location.lng,
+      },
+    } as RouteHop;
+  });
+
+  return await Promise.all(hopPromises);
 }

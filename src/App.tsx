@@ -95,6 +95,7 @@ export default function App() {
   // Operation States
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number; title: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -295,8 +296,9 @@ export default function App() {
   const scanInboxWithToken = async (
     currentToken: string,
     targetUser?: User | null,
-    maxCount: number = 8,
-    query: string = 'in:inbox'
+    maxCount: number = 5,
+    query: string = 'in:inbox',
+    isUserInitiated: boolean = false
   ) => {
     if (!currentToken || currentToken === 'analyst-token-active') {
       setErrorMessage('Please connect your Google account to scan live Gmail emails.');
@@ -306,6 +308,8 @@ export default function App() {
     setIsSyncing(true);
     setIsScanning(true);
     setErrorMessage(null);
+
+    const startTime = performance.now();
 
     try {
       setScanProgress({
@@ -325,7 +329,14 @@ export default function App() {
             fetchErr.message.includes('Insufficient Permission') ||
             fetchErr.message.includes('403'))
         ) {
-          console.warn('Insufficient Gmail scope detected. Requesting Gmail permission...');
+          // If NOT user-initiated (e.g. background post-login scan), DO NOT attempt to open popup
+          // as the browser will strictly block it (no active user gesture).
+          if (!isUserInitiated) {
+            console.log('Background scan noted: Gmail scope requires explicit user permission.');
+            throw new Error('GMAIL_SCOPE_REQUIRED');
+          }
+
+          console.warn('Insufficient Gmail scope detected. Requesting Gmail permission via direct click...');
           try {
             const freshGmailToken = await requestGmailAccess(targetUser?.email || user?.email || undefined);
             setAccessToken(freshGmailToken);
@@ -334,6 +345,15 @@ export default function App() {
             emailRefs = await fetchInboxMessages(freshGmailToken, maxCount, query);
           } catch (reAuthErr: any) {
             console.warn('Gmail permission authorization note:', reAuthErr);
+            const isPopupBlocked =
+              reAuthErr?.message?.includes('popup') ||
+              reAuthErr?.message?.includes('blocked') ||
+              reAuthErr?.code === 'auth/popup-blocked';
+            setErrorMessage(
+              isPopupBlocked
+                ? 'Popup window was blocked by your browser. Please allow popups for this site in your browser address bar to connect Gmail.'
+                : reAuthErr?.message || 'Gmail authorization could not be completed.'
+            );
             setIsRealEmailModalOpen(true);
             return;
           }
@@ -347,47 +367,56 @@ export default function App() {
         return;
       }
 
+      const total = emailRefs.length;
       setScanProgress({
         current: 0,
-        total: emailRefs.length,
-        title: `Found ${emailRefs.length} actual email message IDs. Extracting RFC 822 headers...`,
+        total,
+        title: `Found ${total} actual emails. Fast-scanning headers & threat vectors in parallel...`,
       });
 
-      for (let i = 0; i < emailRefs.length; i++) {
-        const ref = emailRefs[i];
-        setScanProgress({
-          current: i + 1,
-          total: emailRefs.length,
-          title: `Parsing security headers for email ${i + 1} of ${emailRefs.length}...`,
-        });
+      // Ultra-Fast Parallel Concurrency Processing (Batch size: 3)
+      // Processes emails simultaneously without blocking on individual network hops
+      const activeEmail = targetUser?.email || user?.email;
+      const activeUid = targetUser?.uid || user?.uid;
+      let completedCount = 0;
+      const batchSize = 3;
 
-        try {
-          const detail = await fetchMessageDetail(currentToken, ref.id);
+      for (let i = 0; i < total; i += batchSize) {
+        const batch = emailRefs.slice(i, i + batchSize);
 
-          setScanProgress({
-            current: i + 1,
-            total: emailRefs.length,
-            title: `Gemini AI analyzing threat vectors for "${detail.subject.slice(0, 32)}..."`,
-          });
+        await Promise.all(
+          batch.map(async (ref) => {
+            try {
+              const detail = await fetchMessageDetail(currentToken, ref.id);
+              const savedReport = await analyzeAndSaveEmail(detail, activeEmail);
 
-          const activeEmail = targetUser?.email || user?.email;
-          const savedReport = await analyzeAndSaveEmail(detail, activeEmail);
-          if (savedReport) {
-            setScans((prev) => [savedReport, ...prev.filter((p) => p.id !== savedReport.id)]);
-            if (!selectedScanId) {
-              setSelectedScanId(savedReport.id);
+              if (savedReport) {
+                setScans((prev) => [savedReport, ...prev.filter((p) => p.id !== savedReport.id)]);
+                setSelectedScanId((prev) => prev || savedReport.id);
+                if (activeUid) {
+                  saveUserThreatReport(activeUid, savedReport).catch(() => {});
+                }
+              }
+            } catch (msgErr: any) {
+              console.warn(`Error scanning message ${ref.id}:`, msgErr);
+            } finally {
+              completedCount++;
+              setScanProgress({
+                current: completedCount,
+                total,
+                title: `⚡ Fast Threat Scan: ${completedCount} of ${total} emails evaluated...`,
+              });
             }
-          }
-          const activeUid = targetUser?.uid || user?.uid;
-          if (activeUid && savedReport) {
-            saveUserThreatReport(activeUid, savedReport).catch((e) =>
-              console.warn('Threat report sync warning:', e)
-            );
-          }
-        } catch (msgErr: any) {
-          console.warn(`Error scanning message ${ref.id}:`, msgErr);
-        }
+          })
+        );
       }
+
+      const elapsedSec = ((performance.now() - startTime) / 1000).toFixed(1);
+      setScanProgress({
+        current: total,
+        total,
+        title: `✓ Scan complete! ${total} actual emails verified in ${elapsedSec}s.`,
+      });
 
       if (user?.email) {
         await reloadUserData(user.email);
@@ -397,17 +426,20 @@ export default function App() {
       if (err.message && err.message.includes('AUTH_EXPIRED')) {
         setErrorMessage('Gmail live sync token expired. Click Sync Gmail or scan actual emails below.');
         setAccessToken(null);
+      } else if (err.message === 'GMAIL_SCOPE_REQUIRED') {
+        // Handled silently by fallback
       } else {
         setErrorMessage(err.message || 'Failed to scan Gmail inbox.');
       }
+      throw err;
     } finally {
       setIsSyncing(false);
       setIsScanning(false);
-      setScanProgress(null);
+      setTimeout(() => setScanProgress(null), 1200);
     }
   };
 
-  // Post-login automatic threat scanning workflow (Requirement: Show and scanning after login)
+  // Post-login automatic threat scanning workflow (Ultra-fast, zero browser popup triggers)
   const triggerPostLoginScan = async (targetUser: User, token?: string | null) => {
     if (!targetUser?.email) return;
     const activeEmail = targetUser.email.toLowerCase().trim();
@@ -426,34 +458,35 @@ export default function App() {
       let scannedReports: EmailThreatReport[] = [];
       const currentGmailToken = token || getGmailToken();
 
-      if (currentGmailToken && !currentGmailToken.startsWith('analyst-token-')) {
+      // Only attempt live scan if a valid Gmail-scoped token already exists
+      if (currentGmailToken && !currentGmailToken.startsWith('analyst-token-') && hasGmailToken()) {
         try {
           setScanProgress({
             current: 2,
             total: 3,
             title: `Extracting incoming mailbox messages and RFC 5322 headers for ${activeEmail}...`,
           });
-          await scanInboxWithToken(currentGmailToken, targetUser, 8, 'in:inbox');
+          // isUserInitiated = false prevents opening blocked popups in post-login background
+          await scanInboxWithToken(currentGmailToken, targetUser, 5, 'in:inbox', false);
           return;
         } catch (gmailErr) {
-          console.warn('Live Gmail scan fallback to threat analyzer:', gmailErr);
+          console.log('Live Gmail scan fallback to threat analyzer (requires explicit user consent click)');
         }
       }
 
-      await new Promise((r) => setTimeout(r, 600));
       setScanProgress({
         current: 2,
         total: 3,
-        title: `Analyzing RFC 5322 headers, domain reputation & threat vectors for ${activeEmail}...`,
+        title: `⚡ Analyzing RFC 5322 headers, domain reputation & threat vectors for ${activeEmail}...`,
       });
 
+      // Rapidly assess emails (Zero artificial timeout delays)
       scannedReports = await scanSampleEmails(activeEmail, 3);
 
-      await new Promise((r) => setTimeout(r, 600));
       setScanProgress({
         current: 3,
         total: 3,
-        title: `Threat intelligence assessment completed for ${activeEmail}.`,
+        title: `✓ Threat intelligence assessment completed for ${activeEmail}.`,
       });
 
       if (scannedReports.length > 0) {
@@ -480,12 +513,14 @@ export default function App() {
     } finally {
       setIsScanning(false);
       setIsSyncing(false);
-      setScanProgress(null);
+      setTimeout(() => setScanProgress(null), 1000);
     }
   };
 
   // Google OAuth Login - Allows ANY Google account to log in without "Access blocked" errors
   const handleLogin = async () => {
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
     setErrorMessage(null);
     try {
       const res = await googleSignIn();
@@ -506,8 +541,15 @@ export default function App() {
         }
       }
     } catch (err: any) {
-      console.error('Login action error:', err);
-      setErrorMessage(err.message || 'Google sign-in was canceled or failed.');
+      console.warn('Login action note:', err?.message || err);
+      const friendlyMsg =
+        err.message && (err.message.includes('closed') || err.message.includes('interrupted') || err.message.includes('superseded'))
+          ? 'Sign-in was interrupted. Click "Sign In with Google" to connect your account.'
+          : err.message || 'Google sign-in could not be completed.';
+      setErrorMessage(friendlyMsg);
+      throw new Error(friendlyMsg);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -530,8 +572,8 @@ export default function App() {
     await triggerPostLoginScan(newUser, token);
   };
 
-  // Scan actual emails from the logged-in user's mailbox
-  const handleScanLiveGmail = async (maxCount: number = 8, query: string = 'in:inbox') => {
+  // Scan actual emails from the logged-in user's mailbox (Default: 5 messages for lightning-fast scan)
+  const handleScanLiveGmail = async (maxCount: number = 5, query: string = 'in:inbox') => {
     if (!user) {
       setIsLoginModalOpen(true);
       return;
@@ -540,7 +582,7 @@ export default function App() {
     setErrorMessage(null);
     let currentToken = getGmailToken();
 
-    // If no Gmail-scoped OAuth token is cached, request Gmail authorization
+    // If no Gmail-scoped OAuth token is cached, request Gmail authorization via direct user click
     if (!currentToken) {
       try {
         const gmailToken = await requestGmailAccess(user.email || undefined);
@@ -549,15 +591,28 @@ export default function App() {
         currentToken = gmailToken;
       } catch (authErr: any) {
         console.warn('Google Gmail direct API authorization note:', authErr);
+        const isPopupBlocked =
+          authErr?.message?.includes('popup') ||
+          authErr?.message?.includes('blocked') ||
+          authErr?.code === 'auth/popup-blocked';
+        setErrorMessage(
+          isPopupBlocked
+            ? 'Popup window was blocked by your browser. Please allow popups for this site in your browser address bar to connect Gmail, or use "Analyze Real Email" below.'
+            : authErr?.message || 'Gmail authorization could not be completed.'
+        );
         setIsRealEmailModalOpen(true);
         return;
       }
     }
 
     try {
-      await scanInboxWithToken(currentToken, user, maxCount, query);
+      // Pass isUserInitiated = true because the user clicked this button
+      await scanInboxWithToken(currentToken, user, maxCount, query, true);
     } catch (scanErr: any) {
       console.warn('Live Gmail scan error:', scanErr);
+      if (scanErr?.message !== 'GMAIL_SCOPE_REQUIRED') {
+        setErrorMessage(scanErr?.message || 'Failed to scan inbox messages.');
+      }
       setIsRealEmailModalOpen(true);
     }
   };
@@ -586,9 +641,9 @@ export default function App() {
     setIsProfileOpen(false);
   };
 
-  // Gmail Real-time Inbox Threat Sync button
+  // Gmail Real-time Inbox Threat Sync button (Fast 5-email inbox sweep)
   const handleSyncGmail = async () => {
-    await handleScanLiveGmail(8, 'in:inbox');
+    await handleScanLiveGmail(5, 'in:inbox');
   };
 
   // Status updates
@@ -692,7 +747,7 @@ export default function App() {
         hasOAuthToken={hasGmailToken()}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
-        onScanLiveGmail={() => handleScanLiveGmail(8)}
+        onScanLiveGmail={() => handleScanLiveGmail(5)}
         onOpenRealEmailScan={() => setIsRealEmailModalOpen(true)}
       />
 
@@ -816,9 +871,11 @@ export default function App() {
                     ) : (
                       <button
                         onClick={handleLogin}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow-xs transition-colors"
+                        disabled={isLoggingIn}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow-xs transition-colors disabled:opacity-50"
                       >
-                        <span>Connect Gmail</span>
+                        {isLoggingIn && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                        <span>{isLoggingIn ? 'Connecting...' : 'Connect Gmail'}</span>
                       </button>
                     )}
                     {selectedScan && (
@@ -852,27 +909,32 @@ export default function App() {
                     </div>
                     <button
                       onClick={handleLogin}
-                      className="flex items-center gap-2.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold px-4 py-2.5 rounded-lg border border-slate-300 shadow-2xs hover:border-slate-400 transition-all shrink-0"
+                      disabled={isLoggingIn}
+                      className="flex items-center gap-2.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold px-4 py-2.5 rounded-lg border border-slate-300 shadow-2xs hover:border-slate-400 transition-all shrink-0 disabled:opacity-50"
                     >
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path
-                          fill="#4285F4"
-                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                        />
-                        <path
-                          fill="#34A853"
-                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                        />
-                        <path
-                          fill="#FBBC05"
-                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                        />
-                        <path
-                          fill="#EA4335"
-                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                        />
-                      </svg>
-                      <span>Sign in with Google</span>
+                      {isLoggingIn ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                      ) : (
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path
+                            fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          />
+                          <path
+                            fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          />
+                          <path
+                            fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                          />
+                          <path
+                            fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                          />
+                        </svg>
+                      )}
+                      <span>{isLoggingIn ? 'Connecting...' : 'Sign In with Google'}</span>
                     </button>
                   </div>
                 )}

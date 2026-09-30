@@ -45,6 +45,8 @@ let cachedAccessToken: string | null = null;
 let cachedGmailToken: string | null = null;
 let cachedUser: User | null = null;
 let isSigningIn = false;
+let activeSignInPromise: Promise<{ user: User; accessToken: string }> | null = null;
+let activeGmailAccessPromise: Promise<string> | null = null;
 
 export const getAccessToken = (): string | null => cachedAccessToken;
 export const setAccessToken = (token: string | null) => {
@@ -168,156 +170,163 @@ export const hasLiveOAuthToken = (): boolean => {
   return !!cachedAccessToken && !cachedAccessToken.startsWith('analyst-token-') && !cachedAccessToken.startsWith('local-');
 };
 
-// Perform Google Sign-In with official Firebase Auth & Google Identity Services
+// Perform Google Sign-In with official Firebase Auth
 // Uses strictly basic identity scopes (email, profile) so ANY Google account can sign in
 // without being blocked by unverified app restrictions.
 export const googleSignIn = async (loginHint?: string): Promise<{ user: User; accessToken: string }> => {
-  isSigningIn = true;
-  const clientId = (firebaseConfig as any)?.oAuthClientId;
+  // 1. If an active sign-in is already in progress, return the existing promise so duplicate clicks don't conflict
+  if (activeSignInPromise) {
+    console.log('googleSignIn: using active in-flight sign-in request');
+    return activeSignInPromise;
+  }
 
-  // 1. Primary: Firebase Auth popup with non-restricted Google provider
-  if (auth && provider) {
+  // 2. If user is already authenticated in Firebase, return immediately
+  if (auth && auth.currentUser) {
     try {
-      const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      let token = credential?.accessToken;
-      if (!token && result.user) {
-        token = await result.user.getIdToken();
-      }
-      cachedUser = result.user;
-      cachedAccessToken = token || `auth-${result.user.uid}`;
-      isSigningIn = false;
-      return { user: result.user, accessToken: cachedAccessToken };
-    } catch (firebaseErr: any) {
-      console.warn('Firebase popup sign-in attempt note:', firebaseErr?.code || firebaseErr?.message);
-      if (firebaseErr?.code === 'auth/popup-closed-by-user') {
-        isSigningIn = false;
-        throw new Error('Google sign-in popup was closed before completing. Please try again.');
-      }
-      if (firebaseErr?.code === 'auth/popup-blocked') {
-        isSigningIn = false;
-        throw new Error('Sign-in popup was blocked by your browser. Please allow popups for this site and try again.');
-      }
+      const token = (await auth.currentUser.getIdToken()) || `auth-${auth.currentUser.uid}`;
+      cachedUser = auth.currentUser;
+      cachedAccessToken = token;
+      return { user: auth.currentUser, accessToken: token };
+    } catch {
+      // Continue to popup
     }
   }
 
-  // 2. Secondary: Try Google Identity Services token client with non-restricted AUTH_SCOPES
-  if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2 && clientId) {
-    try {
-      const tokenPromise = new Promise<{ user: User; accessToken: string }>((resolve, reject) => {
-        const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: AUTH_SCOPES.join(' '),
-          hint: loginHint || undefined,
-          prompt: 'select_account',
-          callback: async (response: any) => {
-            if (response.error) {
-              reject(new Error(response.error_description || response.error));
-              return;
-            }
-            if (!response.access_token) {
-              reject(new Error('No access token returned from Google authorization'));
-              return;
-            }
+  activeSignInPromise = (async () => {
+    isSigningIn = true;
+    if (!auth || !provider) {
+      throw new Error('Google Sign-In service is initializing. Please try again or select your email directly.');
+    }
 
-            const token = response.access_token;
+    const executePopup = async (isRetry = false): Promise<{ user: User; accessToken: string }> => {
+      try {
+        if (loginHint) {
+          provider.setCustomParameters({
+            prompt: 'select_account',
+            login_hint: loginHint,
+          });
+        }
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        let token = credential?.accessToken;
+        if (!token && result.user) {
+          token = await result.user.getIdToken();
+        }
+        cachedUser = result.user;
+        cachedAccessToken = token || `auth-${result.user.uid}`;
+        return { user: result.user, accessToken: cachedAccessToken };
+      } catch (firebaseErr: any) {
+        console.warn('Firebase popup sign-in attempt note:', firebaseErr?.code || firebaseErr?.message);
+
+        // If superseded by another action or cancelled popup request, check if user is now signed in
+        if (firebaseErr?.code === 'auth/cancelled-popup-request') {
+          if (auth.currentUser) {
+            const token = (await auth.currentUser.getIdToken().catch(() => '')) || `auth-${auth.currentUser.uid}`;
+            cachedUser = auth.currentUser;
             cachedAccessToken = token;
+            return { user: auth.currentUser, accessToken: token };
+          }
+          // If not retry yet, wait 350ms for previous cancelled popup to settle and retry once
+          if (!isRetry) {
+            await new Promise((r) => setTimeout(r, 350));
+            return executePopup(true);
+          }
+          throw new Error('Sign-in window was closed or interrupted. Please click "Sign In with Google" again.');
+        }
 
-            try {
-              const info = await fetchGoogleUserInfo(token);
-              const userEmail = info.email || loginHint || 'user@gmail.com';
-              const userObj = createProfileUser(userEmail, info.name, info.picture);
-              cachedUser = userObj;
-              resolve({ user: userObj, accessToken: token });
-            } catch (profileErr) {
-              console.warn('Profile read fallback:', profileErr);
-              const fallbackEmail = loginHint || 'user@gmail.com';
-              const genericUser = createProfileUser(fallbackEmail, 'Google User');
-              cachedUser = genericUser;
-              resolve({ user: genericUser, accessToken: token });
-            }
-          },
-        });
+        if (firebaseErr?.code === 'auth/popup-closed-by-user') {
+          throw new Error('Google sign-in popup was closed before completing. Please try again.');
+        }
+        if (
+          firebaseErr?.code === 'auth/popup-blocked' ||
+          String(firebaseErr?.message || '').toLowerCase().includes('blocked')
+        ) {
+          throw new Error('Sign-in popup was blocked by your browser. Please allow popups for this site in your address bar and try again.');
+        }
 
-        tokenClient.requestAccessToken({ prompt: 'select_account', hint: loginHint });
-      });
-
-      const result = await tokenPromise;
-      isSigningIn = false;
-      return result;
-    } catch (gisError: any) {
-      console.warn('Google Identity Services client attempt:', gisError?.message || gisError);
-      if (gisError?.message?.includes('closed') || gisError?.message?.includes('user_cancel')) {
-        isSigningIn = false;
-        throw new Error('Google sign-in window was closed. Please try again.');
+        throw firebaseErr;
       }
-    }
-  }
+    };
 
-  isSigningIn = false;
-  throw new Error('Google Sign-In service is initializing. Please try again or select your email directly.');
+    try {
+      return await executePopup();
+    } finally {
+      isSigningIn = false;
+      activeSignInPromise = null;
+    }
+  })();
+
+  return activeSignInPromise;
 };
 
 // Request incremental Gmail API permission specifically for reading real inbox messages
 export const requestGmailAccess = async (loginHint?: string): Promise<string> => {
-  const clientId = (firebaseConfig as any)?.oAuthClientId;
+  if (activeGmailAccessPromise) {
+    return activeGmailAccessPromise;
+  }
 
-  // 1. Try Google Identity Services token client with gmail.readonly
-  if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2 && clientId) {
-    try {
-      const tokenPromise = new Promise<string>((resolve, reject) => {
-        const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: 'https://www.googleapis.com/auth/gmail.readonly',
-          hint: loginHint || undefined,
+  // If already cached and valid, return it
+  if (cachedGmailToken && !cachedGmailToken.startsWith('analyst-token-')) {
+    return cachedGmailToken;
+  }
+
+  activeGmailAccessPromise = (async () => {
+    if (!auth) {
+      throw new Error('Google authentication service is initializing.');
+    }
+
+    const executeGmailPopup = async (isRetry = false): Promise<string> => {
+      try {
+        const gmailProvider = new GoogleAuthProvider();
+        gmailProvider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+        gmailProvider.setCustomParameters({
           prompt: 'consent',
-          callback: (response: any) => {
-            if (response.error) {
-              reject(new Error(response.error_description || response.error));
-              return;
-            }
-            if (!response.access_token) {
-              reject(new Error('No access token returned for Gmail API'));
-              return;
-            }
-            cachedAccessToken = response.access_token;
-            cachedGmailToken = response.access_token;
-            resolve(response.access_token);
-          },
+          ...(loginHint ? { login_hint: loginHint } : {}),
         });
-        tokenClient.requestAccessToken({ prompt: 'consent', hint: loginHint });
-      });
+        const result = await signInWithPopup(auth, gmailProvider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          cachedAccessToken = credential.accessToken;
+          cachedGmailToken = credential.accessToken;
+          return credential.accessToken;
+        }
+        throw new Error('Could not obtain Gmail access token from credential.');
+      } catch (fbErr: any) {
+        console.warn('Firebase Gmail scope attempt note:', fbErr?.code || fbErr?.message);
 
-      return await tokenPromise;
-    } catch (gisErr: any) {
-      console.warn('GIS Gmail scope attempt error:', gisErr?.message || gisErr);
-      throw gisErr;
-    }
-  }
+        if (fbErr?.code === 'auth/cancelled-popup-request') {
+          if (cachedGmailToken) {
+            return cachedGmailToken;
+          }
+          if (!isRetry) {
+            await new Promise((r) => setTimeout(r, 350));
+            return executeGmailPopup(true);
+          }
+          throw new Error('Google authorization was interrupted. Please click "Sync Gmail" to try again.');
+        }
 
-  // 2. Try Firebase Auth popup with Gmail scope provider
-  if (auth) {
-    try {
-      const gmailProvider = new GoogleAuthProvider();
-      gmailProvider.addScope('https://www.googleapis.com/auth/gmail.readonly');
-      gmailProvider.setCustomParameters({
-        prompt: 'consent',
-        ...(loginHint ? { login_hint: loginHint } : {}),
-      });
-      const result = await signInWithPopup(auth, gmailProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential?.accessToken) {
-        cachedAccessToken = credential.accessToken;
-        cachedGmailToken = credential.accessToken;
-        return credential.accessToken;
+        if (
+          fbErr?.code === 'auth/popup-blocked' ||
+          String(fbErr?.message || '').toLowerCase().includes('popup') ||
+          String(fbErr?.message || '').toLowerCase().includes('blocked')
+        ) {
+          throw new Error('Popup window was blocked by your browser. Please allow popups for this site in your browser address bar and try again.');
+        }
+        if (fbErr?.code === 'auth/popup-closed-by-user') {
+          throw new Error('Google authorization popup was closed before completing. Please try again.');
+        }
+        throw fbErr;
       }
-    } catch (fbErr: any) {
-      console.warn('Firebase Gmail scope attempt note:', fbErr);
-      throw fbErr;
-    }
-  }
+    };
 
-  throw new Error('Could not obtain Gmail access token.');
+    try {
+      return await executeGmailPopup();
+    } finally {
+      activeGmailAccessPromise = null;
+    }
+  })();
+
+  return activeGmailAccessPromise;
 };
 
 export const logout = async () => {

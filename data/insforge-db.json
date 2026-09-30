@@ -1,7 +1,916 @@
 {
   "version": "2.4.0-insforge-soc",
-  "updatedAt": "2026-09-25T09:20:33.195Z",
+  "updatedAt": "2026-09-29T18:07:11.653Z",
   "scans": [
+    {
+      "id": "test-2",
+      "subject": "Security Alert 2",
+      "sender": {
+        "name": "Google Security",
+        "email": "no-reply@accounts.google.com",
+        "domain": "google.com"
+      },
+      "recipient": "user@example.com",
+      "date": "2026-09-29T18:07:11.646Z",
+      "snippet": "",
+      "bodyPreview": "Your account has a new sign-in.",
+      "headers": {
+        "from": "no-reply@accounts.google.com",
+        "to": "user@example.com",
+        "subject": "Security Alert 2",
+        "date": "2026-09-29T18:07:11.646Z",
+        "messageId": "<test-2@threatmail.soc>",
+        "spfStatus": "neutral",
+        "dkimStatus": "neutral",
+        "dmarcStatus": "neutral",
+        "senderIp": "209.85.220.41",
+        "clientIp": "209.85.220.41"
+      },
+      "extractedLinks": [],
+      "attachments": [],
+      "senderIp": "209.85.220.41",
+      "senderLocation": {
+        "city": "Mountain View",
+        "country": "United States",
+        "countryCode": "US",
+        "lat": 37.422,
+        "lng": -122.0841,
+        "isp": "Google LLC MX Relay",
+        "org": "Google Workspace"
+      },
+      "travelRoute": [
+        {
+          "hopNumber": 1,
+          "fromServer": "mail-origin.external.net",
+          "byServer": "smtp-relay.transit.net",
+          "ip": "209.85.220.41",
+          "location": {
+            "city": "Mountain View",
+            "country": "United States",
+            "lat": 37.422,
+            "lng": -122.0841
+          }
+        },
+        {
+          "hopNumber": 2,
+          "fromServer": "smtp-relay.transit.net",
+          "byServer": "mx.google.com",
+          "ip": "142.251.12.26",
+          "location": {
+            "city": "Council Bluffs",
+            "country": "United States",
+            "lat": 41.2619,
+            "lng": -95.8608
+          }
+        }
+      ],
+      "riskScore": 21,
+      "classification": "Safe",
+      "attackVector": "Clean",
+      "threatExplanation": "Kaggle Ensemble classified message as SAFE (21/100). Baseline heuristic and DistilBERT language analysis detected clean communicative intent without deception.",
+      "indicatorsOfCompromise": [
+        "From Display Name impersonates trusted brand/authority but domain is unrelated"
+      ],
+      "mitigationRecommendation": "Standard delivery authorized. Legitimate email verified with authenticated domain and safe links.",
+      "ensembleDetails": {
+        "modelType": "SIH26106 Ensemble (0.65*DistilBERT + 0.35*XGBoost)",
+        "textBranchScore": 8,
+        "xgbBranchScore": 45,
+        "rawEnsembleScore": 21,
+        "hardOverrideTriggered": false,
+        "legitBoostersApplied": [],
+        "features28": {
+          "display_text_vs_href_mismatch": false,
+          "is_ip_url": false,
+          "url_shortener": false,
+          "punycode": false,
+          "at_symbol_in_url": false,
+          "suspicious_tld": false,
+          "subdomain_count_gt3": false,
+          "url_entropy_gt4_5": false,
+          "https_in_hostname_trick": false,
+          "excessive_url_length": false,
+          "multiple_redirect_params": false,
+          "external_domain_count": 0,
+          "from_name_vs_from_domain_mismatch": true,
+          "reply_to_not_from": false,
+          "spf_fail": false,
+          "dkim_fail": false,
+          "dmarc_fail": false,
+          "return_path_mismatch": false,
+          "credential_words_near_url": false,
+          "urgency_cues": false,
+          "authority_cues": false,
+          "payment_wire_change_cues": false,
+          "bec_triad_signal": false,
+          "suspicious_attachment": false,
+          "domain_in_alexa_top10k": true,
+          "spf_and_dkim_pass": false,
+          "list_unsubscribe_header_present": false,
+          "informational_link_only": false
+        },
+        "sih26106OutputLabel": "SAFE",
+        "sih26106ModelFile": "sih26106_detector.pkl",
+        "urlDeceptionCapped": false
+      },
+      "status": "scanned",
+      "scannedAt": "2026-09-29T18:07:11.646Z",
+      "userEmail": "user@example.com"
+    },
+    {
+      "id": "test-1",
+      "subject": "Security Alert",
+      "sender": {
+        "name": "Security Desk",
+        "email": "alert@test.com",
+        "domain": "test.com"
+      },
+      "recipient": "user@example.com",
+      "date": "2026-09-29T18:07:03.657Z",
+      "snippet": "",
+      "bodyPreview": "Please verify your password immediately at http://verify.xyz",
+      "headers": {
+        "from": "alert@test.com",
+        "to": "user@example.com",
+        "subject": "Security Alert",
+        "date": "2026-09-29T18:07:03.657Z",
+        "messageId": "<test-1@threatmail.soc>",
+        "spfStatus": "neutral",
+        "dkimStatus": "neutral",
+        "dmarcStatus": "neutral",
+        "senderIp": "209.85.220.41",
+        "clientIp": "209.85.220.41"
+      },
+      "extractedLinks": [],
+      "attachments": [],
+      "senderIp": "209.85.220.41",
+      "senderLocation": {
+        "city": "Mountain View",
+        "country": "United States",
+        "countryCode": "US",
+        "lat": 37.422,
+        "lng": -122.0841,
+        "isp": "Google LLC MX Relay",
+        "org": "Google Workspace"
+      },
+      "travelRoute": [
+        {
+          "hopNumber": 1,
+          "fromServer": "mail-origin.external.net",
+          "byServer": "smtp-relay.transit.net",
+          "ip": "209.85.220.41",
+          "location": {
+            "city": "Mountain View",
+            "country": "United States",
+            "lat": 37.422,
+            "lng": -122.0841
+          }
+        },
+        {
+          "hopNumber": 2,
+          "fromServer": "smtp-relay.transit.net",
+          "byServer": "mx.google.com",
+          "ip": "142.251.12.26",
+          "location": {
+            "city": "Council Bluffs",
+            "country": "United States",
+            "lat": 41.2619,
+            "lng": -95.8608
+          }
+        }
+      ],
+      "riskScore": 45,
+      "classification": "Suspicious",
+      "attackVector": "Deceptive Link / Typosquatting",
+      "threatExplanation": "Kaggle Ensemble assessed message as Suspicious (45/100). Discrepancies observed in mail routing headers or external hyperlink profiles.",
+      "indicatorsOfCompromise": [
+        "High-abuse or disposable TLD (.xyz, .top, .tk, .work, etc.)",
+        "Credential harvesting terminology in immediate proximity to hyperlink"
+      ],
+      "mitigationRecommendation": "Apply external sender warning banner. Advise recipient to verify sender identity before clicking links.",
+      "ensembleDetails": {
+        "modelType": "SIH26106 Ensemble (0.65*DistilBERT + 0.35*XGBoost)",
+        "textBranchScore": 28,
+        "xgbBranchScore": 77,
+        "rawEnsembleScore": 45,
+        "hardOverrideTriggered": false,
+        "legitBoostersApplied": [],
+        "features28": {
+          "display_text_vs_href_mismatch": false,
+          "is_ip_url": false,
+          "url_shortener": false,
+          "punycode": false,
+          "at_symbol_in_url": false,
+          "suspicious_tld": true,
+          "subdomain_count_gt3": false,
+          "url_entropy_gt4_5": false,
+          "https_in_hostname_trick": false,
+          "excessive_url_length": false,
+          "multiple_redirect_params": false,
+          "external_domain_count": 1,
+          "from_name_vs_from_domain_mismatch": false,
+          "reply_to_not_from": false,
+          "spf_fail": false,
+          "dkim_fail": false,
+          "dmarc_fail": false,
+          "return_path_mismatch": false,
+          "credential_words_near_url": true,
+          "urgency_cues": true,
+          "authority_cues": false,
+          "payment_wire_change_cues": false,
+          "bec_triad_signal": false,
+          "suspicious_attachment": false,
+          "domain_in_alexa_top10k": false,
+          "spf_and_dkim_pass": false,
+          "list_unsubscribe_header_present": false,
+          "informational_link_only": false
+        },
+        "sih26106OutputLabel": "SPAM",
+        "sih26106ModelFile": "sih26106_detector.pkl",
+        "urlDeceptionCapped": false
+      },
+      "status": "scanned",
+      "scannedAt": "2026-09-29T18:07:03.657Z",
+      "userEmail": "user@example.com"
+    },
+    {
+      "id": "scan_auditor_threatmail_ai_1790705182157_3",
+      "userEmail": "auditor@threatmail.ai",
+      "userId": "user_auditor_threatmail_ai",
+      "subject": "Weekly Cloud Architecture Sprint Sync & Milestone Review",
+      "sender": {
+        "name": "Engineering Operations",
+        "email": "devops@internal-cloud.org",
+        "domain": "internal-cloud.org"
+      },
+      "recipient": "auditor@threatmail.ai",
+      "date": "2026-09-29T16:06:22.157Z",
+      "snippet": "Here is the summary of recent microservice deployments, test results, and our upcoming quarterly security patch cycle.",
+      "bodyPreview": "Here is the summary of recent microservice deployments, test results, and our upcoming quarterly security patch cycle.",
+      "headers": {
+        "from": "\"Engineering Operations\" <devops@internal-cloud.org>",
+        "to": "auditor@threatmail.ai",
+        "subject": "Weekly Cloud Architecture Sprint Sync & Milestone Review",
+        "date": "2026-09-29T16:06:22.158Z",
+        "messageId": "<scan_auditor_threatmail_ai_1790705182157_3@threatmail.soc>",
+        "spfStatus": "pass",
+        "dkimStatus": "pass",
+        "dmarcStatus": "pass",
+        "senderIp": "142.250.190.46",
+        "clientIp": "142.250.190.46"
+      },
+      "extractedLinks": [
+        {
+          "url": "https://internal-cloud.org/docs",
+          "domain": "internal-cloud.org",
+          "isSuspicious": false
+        }
+      ],
+      "attachments": [],
+      "senderIp": "142.250.190.46",
+      "senderLocation": {
+        "city": "Mountain View",
+        "country": "United States",
+        "countryCode": "UN",
+        "lat": 50.1109,
+        "lng": 8.6821,
+        "isp": "Secure Global Backbone Transit"
+      },
+      "travelRoute": [
+        {
+          "hopNumber": 1,
+          "fromServer": "internal-cloud.org",
+          "byServer": "mx.relay-security.net",
+          "ip": "142.250.190.46",
+          "timestamp": "2026-09-29T18:06:22.158Z",
+          "location": {
+            "city": "Mountain View",
+            "country": "United States",
+            "lat": 50.1109,
+            "lng": 8.6821
+          }
+        }
+      ],
+      "riskScore": 8,
+      "classification": "Safe",
+      "attackVector": "Clean",
+      "threatExplanation": "Valid SPF, DKIM, and DMARC alignment. Sender IP verified by authentic corporate relay server.",
+      "indicatorsOfCompromise": [
+        "Origin IP: 142.250.190.46",
+        "Unauthorized Domain: internal-cloud.org",
+        "Target Identity: auditor@threatmail.ai"
+      ],
+      "mitigationRecommendation": "Standard inbound email delivery permitted.",
+      "ensembleDetails": {
+        "modelType": "SIH26106 Ensemble (0.65*DistilBERT + 0.35*XGBoost)",
+        "textBranchScore": 8,
+        "xgbBranchScore": 5,
+        "rawEnsembleScore": 7,
+        "hardOverrideTriggered": false,
+        "legitBoostersApplied": [
+          "Cryptographic Sender Alignment (SPF PASS + DKIM PASS)"
+        ],
+        "features28": {
+          "display_text_vs_href_mismatch": false,
+          "is_ip_url": false,
+          "url_shortener": false,
+          "punycode": false,
+          "at_symbol_in_url": false,
+          "suspicious_tld": false,
+          "subdomain_count_gt3": false,
+          "url_entropy_gt4_5": false,
+          "https_in_hostname_trick": false,
+          "excessive_url_length": false,
+          "multiple_redirect_params": false,
+          "external_domain_count": 0,
+          "from_name_vs_from_domain_mismatch": false,
+          "reply_to_not_from": false,
+          "spf_fail": false,
+          "dkim_fail": false,
+          "dmarc_fail": false,
+          "return_path_mismatch": false,
+          "credential_words_near_url": false,
+          "urgency_cues": false,
+          "authority_cues": false,
+          "payment_wire_change_cues": false,
+          "bec_triad_signal": false,
+          "suspicious_attachment": false,
+          "domain_in_alexa_top10k": false,
+          "spf_and_dkim_pass": true,
+          "list_unsubscribe_header_present": false,
+          "informational_link_only": false
+        },
+        "sih26106OutputLabel": "SAFE",
+        "sih26106ModelFile": "sih26106_detector.pkl",
+        "urlDeceptionCapped": false
+      },
+      "status": "scanned",
+      "scannedAt": "2026-09-29T17:06:22.158Z"
+    },
+    {
+      "id": "scan_auditor_threatmail_ai_1790705182137_2",
+      "userEmail": "auditor@threatmail.ai",
+      "userId": "user_auditor_threatmail_ai",
+      "subject": "Security Alert: Microsoft 365 Password Expiration in 24 Hours",
+      "sender": {
+        "name": "IT Security Helpdesk",
+        "email": "support@login-verify365.online",
+        "domain": "login-verify365.online"
+      },
+      "recipient": "auditor@threatmail.ai",
+      "date": "2026-09-29T17:06:22.137Z",
+      "snippet": "Your single-sign-on credentials expire today. Click below to retain access and verify active multi-factor authentication.",
+      "bodyPreview": "Your single-sign-on credentials expire today. Click below to retain access and verify active multi-factor authentication.",
+      "headers": {
+        "from": "\"IT Security Helpdesk\" <support@login-verify365.online>",
+        "to": "auditor@threatmail.ai",
+        "subject": "Security Alert: Microsoft 365 Password Expiration in 24 Hours",
+        "date": "2026-09-29T17:06:22.137Z",
+        "messageId": "<scan_auditor_threatmail_ai_1790705182137_2@threatmail.soc>",
+        "spfStatus": "fail",
+        "dkimStatus": "fail",
+        "dmarcStatus": "fail",
+        "senderIp": "104.244.72.115",
+        "clientIp": "104.244.72.115"
+      },
+      "extractedLinks": [
+        {
+          "url": "https://login-verify365.online/auth",
+          "domain": "login-verify365.online",
+          "isSuspicious": true
+        }
+      ],
+      "attachments": [],
+      "senderIp": "104.244.72.115",
+      "senderLocation": {
+        "city": "Moscow",
+        "country": "Russia",
+        "countryCode": "RU",
+        "lat": 50.1109,
+        "lng": 8.6821,
+        "isp": "Secure Global Backbone Transit"
+      },
+      "travelRoute": [
+        {
+          "hopNumber": 1,
+          "fromServer": "login-verify365.online",
+          "byServer": "mx.relay-security.net",
+          "ip": "104.244.72.115",
+          "timestamp": "2026-09-29T18:06:22.137Z",
+          "location": {
+            "city": "Moscow",
+            "country": "Russia",
+            "lat": 50.1109,
+            "lng": 8.6821
+          }
+        }
+      ],
+      "riskScore": 88,
+      "classification": "Phishing",
+      "attackVector": "Credential Harvesting",
+      "threatExplanation": "Typosquatted domain mimicking official Microsoft identity provider. High likelihood of credential harvesting portal.",
+      "indicatorsOfCompromise": [
+        "Origin IP: 104.244.72.115",
+        "Unauthorized Domain: login-verify365.online",
+        "Target Identity: auditor@threatmail.ai"
+      ],
+      "mitigationRecommendation": "Quarantine email immediately and report domain to SOC threat intel feed.",
+      "ensembleDetails": {
+        "modelType": "SIH26106 Ensemble (0.65*DistilBERT + 0.35*XGBoost)",
+        "textBranchScore": 8,
+        "xgbBranchScore": 99,
+        "rawEnsembleScore": 40,
+        "hardOverrideTriggered": false,
+        "legitBoostersApplied": [],
+        "features28": {
+          "display_text_vs_href_mismatch": false,
+          "is_ip_url": false,
+          "url_shortener": false,
+          "punycode": false,
+          "at_symbol_in_url": false,
+          "suspicious_tld": false,
+          "subdomain_count_gt3": false,
+          "url_entropy_gt4_5": false,
+          "https_in_hostname_trick": true,
+          "excessive_url_length": false,
+          "multiple_redirect_params": false,
+          "external_domain_count": 0,
+          "from_name_vs_from_domain_mismatch": false,
+          "reply_to_not_from": false,
+          "spf_fail": true,
+          "dkim_fail": true,
+          "dmarc_fail": true,
+          "return_path_mismatch": false,
+          "credential_words_near_url": false,
+          "urgency_cues": false,
+          "authority_cues": false,
+          "payment_wire_change_cues": false,
+          "bec_triad_signal": false,
+          "suspicious_attachment": false,
+          "domain_in_alexa_top10k": false,
+          "spf_and_dkim_pass": false,
+          "list_unsubscribe_header_present": false,
+          "informational_link_only": false
+        },
+        "sih26106OutputLabel": "SPAM",
+        "sih26106ModelFile": "sih26106_detector.pkl",
+        "urlDeceptionCapped": false
+      },
+      "status": "quarantined",
+      "scannedAt": "2026-09-29T17:36:22.138Z"
+    },
+    {
+      "id": "scan_auditor_threatmail_ai_1790705182124_1",
+      "userEmail": "auditor@threatmail.ai",
+      "userId": "user_auditor_threatmail_ai",
+      "subject": "URGENT: Executive Wire Transfer Authorization Required (#TR-9942)",
+      "sender": {
+        "name": "Chief Financial Officer",
+        "email": "cfo-exec@corporate-acme.co.vu",
+        "domain": "corporate-acme.co.vu"
+      },
+      "recipient": "auditor@threatmail.ai",
+      "date": "2026-09-29T18:06:22.124Z",
+      "snippet": "Please immediately process the foreign vendor invoice for $48,200. Wire details are attached in the encrypted ledger.",
+      "bodyPreview": "Please immediately process the foreign vendor invoice for $48,200. Wire details are attached in the encrypted ledger.",
+      "headers": {
+        "from": "\"Chief Financial Officer\" <cfo-exec@corporate-acme.co.vu>",
+        "to": "auditor@threatmail.ai",
+        "subject": "URGENT: Executive Wire Transfer Authorization Required (#TR-9942)",
+        "date": "2026-09-29T18:06:22.124Z",
+        "messageId": "<scan_auditor_threatmail_ai_1790705182124_1@threatmail.soc>",
+        "spfStatus": "fail",
+        "dkimStatus": "fail",
+        "dmarcStatus": "fail",
+        "senderIp": "185.220.101.5",
+        "clientIp": "185.220.101.5"
+      },
+      "extractedLinks": [
+        {
+          "url": "https://corporate-acme.co.vu/transfer",
+          "domain": "corporate-acme.co.vu",
+          "isSuspicious": true
+        }
+      ],
+      "attachments": [],
+      "senderIp": "185.220.101.5",
+      "senderLocation": {
+        "city": "Frankfurt",
+        "country": "Germany",
+        "countryCode": "GE",
+        "lat": 50.1109,
+        "lng": 8.6821,
+        "isp": "Secure Global Backbone Transit"
+      },
+      "travelRoute": [
+        {
+          "hopNumber": 1,
+          "fromServer": "corporate-acme.co.vu",
+          "byServer": "mx.relay-security.net",
+          "ip": "185.220.101.5",
+          "timestamp": "2026-09-29T18:06:22.124Z",
+          "location": {
+            "city": "Frankfurt",
+            "country": "Germany",
+            "lat": 50.1109,
+            "lng": 8.6821
+          }
+        }
+      ],
+      "riskScore": 92,
+      "classification": "Business Email Compromise",
+      "attackVector": "VIP Impersonation / BEC",
+      "threatExplanation": "Sender display name impersonates executive authority. Return-path domain differs from legitimate corporate MX records.",
+      "indicatorsOfCompromise": [
+        "Origin IP: 185.220.101.5",
+        "Unauthorized Domain: corporate-acme.co.vu",
+        "Target Identity: auditor@threatmail.ai"
+      ],
+      "mitigationRecommendation": "Quarantine email immediately and report domain to SOC threat intel feed.",
+      "ensembleDetails": {
+        "modelType": "SIH26106 Ensemble (0.65*DistilBERT + 0.35*XGBoost)",
+        "textBranchScore": 68,
+        "xgbBranchScore": 99,
+        "rawEnsembleScore": 79,
+        "hardOverrideTriggered": true,
+        "hardOverrideReason": "High-confidence Business Email Compromise (Authority + Urgency + Payment diversion).",
+        "legitBoostersApplied": [],
+        "features28": {
+          "display_text_vs_href_mismatch": false,
+          "is_ip_url": false,
+          "url_shortener": false,
+          "punycode": false,
+          "at_symbol_in_url": false,
+          "suspicious_tld": false,
+          "subdomain_count_gt3": false,
+          "url_entropy_gt4_5": false,
+          "https_in_hostname_trick": false,
+          "excessive_url_length": false,
+          "multiple_redirect_params": false,
+          "external_domain_count": 0,
+          "from_name_vs_from_domain_mismatch": false,
+          "reply_to_not_from": false,
+          "spf_fail": true,
+          "dkim_fail": true,
+          "dmarc_fail": true,
+          "return_path_mismatch": false,
+          "credential_words_near_url": false,
+          "urgency_cues": true,
+          "authority_cues": true,
+          "payment_wire_change_cues": true,
+          "bec_triad_signal": true,
+          "suspicious_attachment": false,
+          "domain_in_alexa_top10k": false,
+          "spf_and_dkim_pass": false,
+          "list_unsubscribe_header_present": false,
+          "informational_link_only": false
+        },
+        "sih26106OutputLabel": "BEC",
+        "sih26106ModelFile": "sih26106_detector.pkl",
+        "urlDeceptionCapped": false
+      },
+      "status": "quarantined",
+      "scannedAt": "2026-09-29T18:06:22.127Z"
+    },
+    {
+      "id": "scan_analyst_threatmail_ai_1790704489042_3",
+      "userEmail": "analyst@threatmail.ai",
+      "userId": "user_analyst_threatmail_ai",
+      "subject": "Weekly Cloud Architecture Sprint Sync & Milestone Review",
+      "sender": {
+        "name": "Engineering Operations",
+        "email": "devops@internal-cloud.org",
+        "domain": "internal-cloud.org"
+      },
+      "recipient": "analyst@threatmail.ai",
+      "date": "2026-09-29T15:54:49.042Z",
+      "snippet": "Here is the summary of recent microservice deployments, test results, and our upcoming quarterly security patch cycle.",
+      "bodyPreview": "Here is the summary of recent microservice deployments, test results, and our upcoming quarterly security patch cycle.",
+      "headers": {
+        "from": "\"Engineering Operations\" <devops@internal-cloud.org>",
+        "to": "analyst@threatmail.ai",
+        "subject": "Weekly Cloud Architecture Sprint Sync & Milestone Review",
+        "date": "2026-09-29T15:54:49.042Z",
+        "messageId": "<scan_analyst_threatmail_ai_1790704489042_3@threatmail.soc>",
+        "spfStatus": "pass",
+        "dkimStatus": "pass",
+        "dmarcStatus": "pass",
+        "senderIp": "142.250.190.46",
+        "clientIp": "142.250.190.46"
+      },
+      "extractedLinks": [
+        {
+          "url": "https://internal-cloud.org/docs",
+          "domain": "internal-cloud.org",
+          "isSuspicious": false
+        }
+      ],
+      "attachments": [],
+      "senderIp": "142.250.190.46",
+      "senderLocation": {
+        "city": "Mountain View",
+        "country": "United States",
+        "countryCode": "UN",
+        "lat": 50.1109,
+        "lng": 8.6821,
+        "isp": "Secure Global Backbone Transit"
+      },
+      "travelRoute": [
+        {
+          "hopNumber": 1,
+          "fromServer": "internal-cloud.org",
+          "byServer": "mx.relay-security.net",
+          "ip": "142.250.190.46",
+          "timestamp": "2026-09-29T17:54:49.042Z",
+          "location": {
+            "city": "Mountain View",
+            "country": "United States",
+            "lat": 50.1109,
+            "lng": 8.6821
+          }
+        }
+      ],
+      "riskScore": 8,
+      "classification": "Safe",
+      "attackVector": "Clean",
+      "threatExplanation": "Valid SPF, DKIM, and DMARC alignment. Sender IP verified by authentic corporate relay server.",
+      "indicatorsOfCompromise": [
+        "Origin IP: 142.250.190.46",
+        "Unauthorized Domain: internal-cloud.org",
+        "Target Identity: analyst@threatmail.ai"
+      ],
+      "mitigationRecommendation": "Standard inbound email delivery permitted.",
+      "ensembleDetails": {
+        "modelType": "SIH26106 Ensemble (0.65*DistilBERT + 0.35*XGBoost)",
+        "textBranchScore": 8,
+        "xgbBranchScore": 5,
+        "rawEnsembleScore": 7,
+        "hardOverrideTriggered": false,
+        "legitBoostersApplied": [
+          "Cryptographic Sender Alignment (SPF PASS + DKIM PASS)"
+        ],
+        "features28": {
+          "display_text_vs_href_mismatch": false,
+          "is_ip_url": false,
+          "url_shortener": false,
+          "punycode": false,
+          "at_symbol_in_url": false,
+          "suspicious_tld": false,
+          "subdomain_count_gt3": false,
+          "url_entropy_gt4_5": false,
+          "https_in_hostname_trick": false,
+          "excessive_url_length": false,
+          "multiple_redirect_params": false,
+          "external_domain_count": 0,
+          "from_name_vs_from_domain_mismatch": false,
+          "reply_to_not_from": false,
+          "spf_fail": false,
+          "dkim_fail": false,
+          "dmarc_fail": false,
+          "return_path_mismatch": false,
+          "credential_words_near_url": false,
+          "urgency_cues": false,
+          "authority_cues": false,
+          "payment_wire_change_cues": false,
+          "bec_triad_signal": false,
+          "suspicious_attachment": false,
+          "domain_in_alexa_top10k": false,
+          "spf_and_dkim_pass": true,
+          "list_unsubscribe_header_present": false,
+          "informational_link_only": false
+        },
+        "sih26106OutputLabel": "SAFE",
+        "sih26106ModelFile": "sih26106_detector.pkl",
+        "urlDeceptionCapped": false
+      },
+      "status": "scanned",
+      "scannedAt": "2026-09-29T16:54:49.042Z"
+    },
+    {
+      "id": "scan_analyst_threatmail_ai_1790704489031_2",
+      "userEmail": "analyst@threatmail.ai",
+      "userId": "user_analyst_threatmail_ai",
+      "subject": "Security Alert: Microsoft 365 Password Expiration in 24 Hours",
+      "sender": {
+        "name": "IT Security Helpdesk",
+        "email": "support@login-verify365.online",
+        "domain": "login-verify365.online"
+      },
+      "recipient": "analyst@threatmail.ai",
+      "date": "2026-09-29T16:54:49.031Z",
+      "snippet": "Your single-sign-on credentials expire today. Click below to retain access and verify active multi-factor authentication.",
+      "bodyPreview": "Your single-sign-on credentials expire today. Click below to retain access and verify active multi-factor authentication.",
+      "headers": {
+        "from": "\"IT Security Helpdesk\" <support@login-verify365.online>",
+        "to": "analyst@threatmail.ai",
+        "subject": "Security Alert: Microsoft 365 Password Expiration in 24 Hours",
+        "date": "2026-09-29T16:54:49.031Z",
+        "messageId": "<scan_analyst_threatmail_ai_1790704489031_2@threatmail.soc>",
+        "spfStatus": "fail",
+        "dkimStatus": "fail",
+        "dmarcStatus": "fail",
+        "senderIp": "104.244.72.115",
+        "clientIp": "104.244.72.115"
+      },
+      "extractedLinks": [
+        {
+          "url": "https://login-verify365.online/auth",
+          "domain": "login-verify365.online",
+          "isSuspicious": true
+        }
+      ],
+      "attachments": [],
+      "senderIp": "104.244.72.115",
+      "senderLocation": {
+        "city": "Moscow",
+        "country": "Russia",
+        "countryCode": "RU",
+        "lat": 50.1109,
+        "lng": 8.6821,
+        "isp": "Secure Global Backbone Transit"
+      },
+      "travelRoute": [
+        {
+          "hopNumber": 1,
+          "fromServer": "login-verify365.online",
+          "byServer": "mx.relay-security.net",
+          "ip": "104.244.72.115",
+          "timestamp": "2026-09-29T17:54:49.031Z",
+          "location": {
+            "city": "Moscow",
+            "country": "Russia",
+            "lat": 50.1109,
+            "lng": 8.6821
+          }
+        }
+      ],
+      "riskScore": 88,
+      "classification": "Phishing",
+      "attackVector": "Credential Harvesting",
+      "threatExplanation": "Typosquatted domain mimicking official Microsoft identity provider. High likelihood of credential harvesting portal.",
+      "indicatorsOfCompromise": [
+        "Origin IP: 104.244.72.115",
+        "Unauthorized Domain: login-verify365.online",
+        "Target Identity: analyst@threatmail.ai"
+      ],
+      "mitigationRecommendation": "Quarantine email immediately and report domain to SOC threat intel feed.",
+      "ensembleDetails": {
+        "modelType": "SIH26106 Ensemble (0.65*DistilBERT + 0.35*XGBoost)",
+        "textBranchScore": 8,
+        "xgbBranchScore": 99,
+        "rawEnsembleScore": 40,
+        "hardOverrideTriggered": false,
+        "legitBoostersApplied": [],
+        "features28": {
+          "display_text_vs_href_mismatch": false,
+          "is_ip_url": false,
+          "url_shortener": false,
+          "punycode": false,
+          "at_symbol_in_url": false,
+          "suspicious_tld": false,
+          "subdomain_count_gt3": false,
+          "url_entropy_gt4_5": false,
+          "https_in_hostname_trick": true,
+          "excessive_url_length": false,
+          "multiple_redirect_params": false,
+          "external_domain_count": 0,
+          "from_name_vs_from_domain_mismatch": false,
+          "reply_to_not_from": false,
+          "spf_fail": true,
+          "dkim_fail": true,
+          "dmarc_fail": true,
+          "return_path_mismatch": false,
+          "credential_words_near_url": false,
+          "urgency_cues": false,
+          "authority_cues": false,
+          "payment_wire_change_cues": false,
+          "bec_triad_signal": false,
+          "suspicious_attachment": false,
+          "domain_in_alexa_top10k": false,
+          "spf_and_dkim_pass": false,
+          "list_unsubscribe_header_present": false,
+          "informational_link_only": false
+        },
+        "sih26106OutputLabel": "SPAM",
+        "sih26106ModelFile": "sih26106_detector.pkl",
+        "urlDeceptionCapped": false
+      },
+      "status": "quarantined",
+      "scannedAt": "2026-09-29T17:24:49.032Z"
+    },
+    {
+      "id": "scan_analyst_threatmail_ai_1790704489019_1",
+      "userEmail": "analyst@threatmail.ai",
+      "userId": "user_analyst_threatmail_ai",
+      "subject": "URGENT: Executive Wire Transfer Authorization Required (#TR-9942)",
+      "sender": {
+        "name": "Chief Financial Officer",
+        "email": "cfo-exec@corporate-acme.co.vu",
+        "domain": "corporate-acme.co.vu"
+      },
+      "recipient": "analyst@threatmail.ai",
+      "date": "2026-09-29T17:54:49.019Z",
+      "snippet": "Please immediately process the foreign vendor invoice for $48,200. Wire details are attached in the encrypted ledger.",
+      "bodyPreview": "Please immediately process the foreign vendor invoice for $48,200. Wire details are attached in the encrypted ledger.",
+      "headers": {
+        "from": "\"Chief Financial Officer\" <cfo-exec@corporate-acme.co.vu>",
+        "to": "analyst@threatmail.ai",
+        "subject": "URGENT: Executive Wire Transfer Authorization Required (#TR-9942)",
+        "date": "2026-09-29T17:54:49.019Z",
+        "messageId": "<scan_analyst_threatmail_ai_1790704489019_1@threatmail.soc>",
+        "spfStatus": "fail",
+        "dkimStatus": "fail",
+        "dmarcStatus": "fail",
+        "senderIp": "185.220.101.5",
+        "clientIp": "185.220.101.5"
+      },
+      "extractedLinks": [
+        {
+          "url": "https://corporate-acme.co.vu/transfer",
+          "domain": "corporate-acme.co.vu",
+          "isSuspicious": true
+        }
+      ],
+      "attachments": [],
+      "senderIp": "185.220.101.5",
+      "senderLocation": {
+        "city": "Frankfurt",
+        "country": "Germany",
+        "countryCode": "GE",
+        "lat": 50.1109,
+        "lng": 8.6821,
+        "isp": "Secure Global Backbone Transit"
+      },
+      "travelRoute": [
+        {
+          "hopNumber": 1,
+          "fromServer": "corporate-acme.co.vu",
+          "byServer": "mx.relay-security.net",
+          "ip": "185.220.101.5",
+          "timestamp": "2026-09-29T17:54:49.019Z",
+          "location": {
+            "city": "Frankfurt",
+            "country": "Germany",
+            "lat": 50.1109,
+            "lng": 8.6821
+          }
+        }
+      ],
+      "riskScore": 92,
+      "classification": "Business Email Compromise",
+      "attackVector": "VIP Impersonation / BEC",
+      "threatExplanation": "Sender display name impersonates executive authority. Return-path domain differs from legitimate corporate MX records.",
+      "indicatorsOfCompromise": [
+        "Origin IP: 185.220.101.5",
+        "Unauthorized Domain: corporate-acme.co.vu",
+        "Target Identity: analyst@threatmail.ai"
+      ],
+      "mitigationRecommendation": "Quarantine email immediately and report domain to SOC threat intel feed.",
+      "ensembleDetails": {
+        "modelType": "SIH26106 Ensemble (0.65*DistilBERT + 0.35*XGBoost)",
+        "textBranchScore": 68,
+        "xgbBranchScore": 99,
+        "rawEnsembleScore": 79,
+        "hardOverrideTriggered": true,
+        "hardOverrideReason": "High-confidence Business Email Compromise (Authority + Urgency + Payment diversion).",
+        "legitBoostersApplied": [],
+        "features28": {
+          "display_text_vs_href_mismatch": false,
+          "is_ip_url": false,
+          "url_shortener": false,
+          "punycode": false,
+          "at_symbol_in_url": false,
+          "suspicious_tld": false,
+          "subdomain_count_gt3": false,
+          "url_entropy_gt4_5": false,
+          "https_in_hostname_trick": false,
+          "excessive_url_length": false,
+          "multiple_redirect_params": false,
+          "external_domain_count": 0,
+          "from_name_vs_from_domain_mismatch": false,
+          "reply_to_not_from": false,
+          "spf_fail": true,
+          "dkim_fail": true,
+          "dmarc_fail": true,
+          "return_path_mismatch": false,
+          "credential_words_near_url": false,
+          "urgency_cues": true,
+          "authority_cues": true,
+          "payment_wire_change_cues": true,
+          "bec_triad_signal": true,
+          "suspicious_attachment": false,
+          "domain_in_alexa_top10k": false,
+          "spf_and_dkim_pass": false,
+          "list_unsubscribe_header_present": false,
+          "informational_link_only": false
+        },
+        "sih26106OutputLabel": "BEC",
+        "sih26106ModelFile": "sih26106_detector.pkl",
+        "urlDeceptionCapped": false
+      },
+      "status": "quarantined",
+      "scannedAt": "2026-09-29T17:54:49.022Z"
+    },
     {
       "id": "scan_analyst_threatmail_ai_1790328033188_2",
       "userEmail": "analyst@threatmail.ai",
@@ -6538,6 +7447,66 @@
   ],
   "notifications": [
     {
+      "id": "notif_gcb1cuw",
+      "reportId": "scan_auditor_threatmail_ai_1790705182137_2",
+      "userEmail": "auditor@threatmail.ai",
+      "title": "PHISHING Alert: Security Alert: Microsoft 365 Password Expira",
+      "message": "High risk email (Score: 88/100) from support@login-verify365.online. Vector: Credential Harvesting.",
+      "severity": "critical",
+      "classification": "Phishing",
+      "type": "Phishing",
+      "riskScore": 88,
+      "sender": "support@login-verify365.online",
+      "timestamp": "2026-09-29T18:06:22.152Z",
+      "createdAt": "2026-09-29T18:06:22.152Z",
+      "read": false
+    },
+    {
+      "id": "notif_3vtefcy",
+      "reportId": "scan_auditor_threatmail_ai_1790705182124_1",
+      "userEmail": "auditor@threatmail.ai",
+      "title": "BUSINESS EMAIL COMPROMISE Alert: URGENT: Executive Wire Transfer Authorization",
+      "message": "High risk email (Score: 92/100) from cfo-exec@corporate-acme.co.vu. Vector: VIP Impersonation / BEC.",
+      "severity": "critical",
+      "classification": "Business Email Compromise",
+      "type": "Business Email Compromise",
+      "riskScore": 92,
+      "sender": "cfo-exec@corporate-acme.co.vu",
+      "timestamp": "2026-09-29T18:06:22.132Z",
+      "createdAt": "2026-09-29T18:06:22.132Z",
+      "read": false
+    },
+    {
+      "id": "notif_tbxhp86",
+      "reportId": "scan_analyst_threatmail_ai_1790704489031_2",
+      "userEmail": "analyst@threatmail.ai",
+      "title": "PHISHING Alert: Security Alert: Microsoft 365 Password Expira",
+      "message": "High risk email (Score: 88/100) from support@login-verify365.online. Vector: Credential Harvesting.",
+      "severity": "critical",
+      "classification": "Phishing",
+      "type": "Phishing",
+      "riskScore": 88,
+      "sender": "support@login-verify365.online",
+      "timestamp": "2026-09-29T17:54:49.037Z",
+      "createdAt": "2026-09-29T17:54:49.037Z",
+      "read": false
+    },
+    {
+      "id": "notif_g7t7g3f",
+      "reportId": "scan_analyst_threatmail_ai_1790704489019_1",
+      "userEmail": "analyst@threatmail.ai",
+      "title": "BUSINESS EMAIL COMPROMISE Alert: URGENT: Executive Wire Transfer Authorization",
+      "message": "High risk email (Score: 92/100) from cfo-exec@corporate-acme.co.vu. Vector: VIP Impersonation / BEC.",
+      "severity": "critical",
+      "classification": "Business Email Compromise",
+      "type": "Business Email Compromise",
+      "riskScore": 92,
+      "sender": "cfo-exec@corporate-acme.co.vu",
+      "timestamp": "2026-09-29T17:54:49.027Z",
+      "createdAt": "2026-09-29T17:54:49.027Z",
+      "read": false
+    },
+    {
       "id": "notif_5r513nn",
       "reportId": "scan_analyst_threatmail_ai_1790328033188_2",
       "userEmail": "analyst@threatmail.ai",
@@ -7078,6 +8047,46 @@
       "timestamp": "2026-09-25T09:20:33.195Z",
       "level": "INFO",
       "message": "Scanned email [scan_analyst_threatmail_ai_1790328033188_2] for 'analyst@threatmail.ai' - Classification: Phishing, Risk: 88"
+    },
+    {
+      "timestamp": "2026-09-29T17:54:49.027Z",
+      "level": "INFO",
+      "message": "Scanned email [scan_analyst_threatmail_ai_1790704489019_1] for 'analyst@threatmail.ai' - Classification: Business Email Compromise, Risk: 92"
+    },
+    {
+      "timestamp": "2026-09-29T17:54:49.037Z",
+      "level": "INFO",
+      "message": "Scanned email [scan_analyst_threatmail_ai_1790704489031_2] for 'analyst@threatmail.ai' - Classification: Phishing, Risk: 88"
+    },
+    {
+      "timestamp": "2026-09-29T17:54:49.047Z",
+      "level": "INFO",
+      "message": "Scanned email [scan_analyst_threatmail_ai_1790704489042_3] for 'analyst@threatmail.ai' - Classification: Safe, Risk: 8"
+    },
+    {
+      "timestamp": "2026-09-29T18:06:22.132Z",
+      "level": "INFO",
+      "message": "Scanned email [scan_auditor_threatmail_ai_1790705182124_1] for 'auditor@threatmail.ai' - Classification: Business Email Compromise, Risk: 92"
+    },
+    {
+      "timestamp": "2026-09-29T18:06:22.152Z",
+      "level": "INFO",
+      "message": "Scanned email [scan_auditor_threatmail_ai_1790705182137_2] for 'auditor@threatmail.ai' - Classification: Phishing, Risk: 88"
+    },
+    {
+      "timestamp": "2026-09-29T18:06:22.166Z",
+      "level": "INFO",
+      "message": "Scanned email [scan_auditor_threatmail_ai_1790705182157_3] for 'auditor@threatmail.ai' - Classification: Safe, Risk: 8"
+    },
+    {
+      "timestamp": "2026-09-29T18:07:03.663Z",
+      "level": "INFO",
+      "message": "Scanned email [test-1] for 'user@example.com' - Classification: Suspicious, Risk: 45"
+    },
+    {
+      "timestamp": "2026-09-29T18:07:11.653Z",
+      "level": "INFO",
+      "message": "Scanned email [test-2] for 'user@example.com' - Classification: Safe, Risk: 21"
     }
   ]
 }
